@@ -1,24 +1,55 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Dashboard from './components/Dashboard';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2', // BlueMedix blue
+      light: '#42a5f5',
+      dark: '#1565c0',
+    },
+    secondary: {
+      main: '#26a69a', // Teal for pharmaceutical feel
+    },
+    background: {
+      default: '#f8f9fa',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+  },
+});
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
