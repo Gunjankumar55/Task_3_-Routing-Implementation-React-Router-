@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
@@ -16,41 +17,31 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Rating from '@mui/material/Rating';
+import Snackbar from '@mui/material/Snackbar';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import Snackbar from '@mui/material/Snackbar';
-import Rating from '@mui/material/Rating';
-import { getProducts, getProduct, createProduct, updateProduct, deleteProduct } from '../services/api';
+import { getProducts, deleteProduct } from '../services/api';
 
 function Products() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    price: '',
-    description: '',
-    category: '',
-    image: ''
-  });
+  const [productToDelete, setProductToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success'
   });
 
-  // Fetch products on component mount
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -59,7 +50,6 @@ function Products() {
     try {
       setLoading(true);
       const response = await getProducts();
-      // Add stock status (FakeStore API doesn't have this)
       const productsWithStock = response.data.map(product => ({
         ...product,
         stock: ['In Stock', 'Low Stock', 'Out of Stock'][Math.floor(Math.random() * 3)]
@@ -74,107 +64,16 @@ function Products() {
     }
   };
 
-  const handleViewProduct = async (id) => {
-    try {
-      setLoading(true);
-      const response = await getProduct(id);
-      setCurrentProduct({
-        ...response.data,
-        stock: ['In Stock', 'Low Stock', 'Out of Stock'][Math.floor(Math.random() * 3)]
-      });
-      setOpenViewDialog(true);
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to fetch product details.',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setOpenDeleteDialog(true);
   };
 
-  const handleAddProduct = async () => {
+  const handleDeleteConfirm = async () => {
     try {
       setLoading(true);
-      // Convert price to number before sending to API
-      const dataToSend = {
-        ...formData,
-        price: parseFloat(formData.price)
-      };
-      const response = await createProduct(dataToSend);
-      // Add the new product to the list with stock status
-      const newProduct = {
-        ...response.data,
-        stock: 'In Stock'
-      };
-      setProducts([...products, newProduct]);
-      setOpenAddDialog(false);
-      setFormData({
-        title: '',
-        price: '',
-        description: '',
-        category: '',
-        image: ''
-      });
-      setSnackbar({
-        open: true,
-        message: 'Product added successfully!',
-        severity: 'success'
-      });
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to add product.',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditProduct = async () => {
-    try {
-      setLoading(true);
-      // Convert price to number before sending to API
-      const dataToSend = {
-        ...formData,
-        price: parseFloat(formData.price)
-      };
-      await updateProduct(currentProduct.id, dataToSend);
-      // Update the product in the local state
-      const updatedProducts = products.map(product => 
-        product.id === currentProduct.id ? { 
-          ...product, 
-          ...formData,
-          price: parseFloat(formData.price) // Ensure price is a number in local state
-        } : product
-      );
-      setProducts(updatedProducts);
-      setOpenEditDialog(false);
-      setSnackbar({
-        open: true,
-        message: 'Product updated successfully!',
-        severity: 'success'
-      });
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to update product.',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteProduct = async () => {
-    try {
-      setLoading(true);
-      await deleteProduct(currentProduct.id);
-      // Remove the product from the local state
-      const updatedProducts = products.filter(product => product.id !== currentProduct.id);
-      setProducts(updatedProducts);
+      await deleteProduct(productToDelete.id);
+      setProducts(products.filter(product => product.id !== productToDelete.id));
       setOpenDeleteDialog(false);
       setSnackbar({
         open: true,
@@ -187,34 +86,10 @@ function Products() {
         message: 'Failed to delete product.',
         severity: 'error'
       });
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const openEditForm = (product) => {
-    setCurrentProduct(product);
-    setFormData({
-      title: product.title,
-      price: product.price.toString(),
-      description: product.description,
-      category: product.category,
-      image: product.image
-    });
-    setOpenEditDialog(true);
-  };
-
-  const openDeleteConfirm = (product) => {
-    setCurrentProduct(product);
-    setOpenDeleteDialog(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
   };
 
   const closeSnackbar = () => {
@@ -224,7 +99,6 @@ function Products() {
     });
   };
 
-  // Filter products based on search term
   const filteredProducts = products.filter(product => 
     product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -262,7 +136,8 @@ function Products() {
           <Button 
             variant="contained" 
             startIcon={<AddIcon />}
-            onClick={() => setOpenAddDialog(true)}
+            component={Link}
+            to="/add-product"
             sx={{ 
               bgcolor: '#1976d2', 
               '&:hover': { bgcolor: '#1565c0' },
@@ -326,7 +201,7 @@ function Products() {
                     Category: {product.category}
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
-                    ${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}
+                    ${product.price.toFixed(2)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Rating value={product.rating?.rate || 0} precision={0.1} readOnly size="small" />
@@ -351,7 +226,7 @@ function Products() {
                   <Button 
                     size="small" 
                     startIcon={<VisibilityIcon />}
-                    onClick={() => handleViewProduct(product.id)}
+                    onClick={() => navigate(`/products/${product.id}`)}
                     sx={{ color: '#1976d2' }}
                   >
                     View
@@ -359,7 +234,7 @@ function Products() {
                   <Button 
                     size="small" 
                     startIcon={<EditIcon />}
-                    onClick={() => openEditForm(product)}
+                    onClick={() => navigate(`/products/${product.id}/edit`)}
                     sx={{ color: '#1976d2' }}
                   >
                     Edit
@@ -367,7 +242,7 @@ function Products() {
                   <Button 
                     size="small" 
                     startIcon={<DeleteIcon />}
-                    onClick={() => openDeleteConfirm(product)}
+                    onClick={() => handleDeleteClick(product)}
                     sx={{ color: '#d32f2f' }}
                   >
                     Delete
@@ -379,250 +254,23 @@ function Products() {
         </Grid>
       )}
 
-      {/* Add Product Dialog */}
-      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Product</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                name="title"
-                label="Product Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="price"
-                label="Price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                fullWidth
-                required
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="category"
-                label="Category"
-                value={formData.category}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                name="description"
-                label="Description"
-                value={formData.description}
-                onChange={handleInputChange}
-                fullWidth
-                multiline
-                rows={4}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                name="image"
-                label="Image URL"
-                value={formData.image}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddProduct} 
-            variant="contained" 
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Add Product'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Product Dialog */}
-      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Product</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                name="title"
-                label="Product Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="price"
-                label="Price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                fullWidth
-                required
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="category"
-                label="Category"
-                value={formData.category}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                name="description"
-                label="Description"
-                value={formData.description}
-                onChange={handleInputChange}
-                fullWidth
-                multiline
-                rows={4}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                name="image"
-                label="Image URL"
-                value={formData.image}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleEditProduct} 
-            variant="contained" 
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Update Product'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* View Product Dialog */}
-      <Dialog open={openViewDialog} onClose={() => setOpenViewDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Product Details</DialogTitle>
-        <DialogContent>
-          {currentProduct && (
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={4}>
-                <img 
-                  src={currentProduct.image} 
-                  alt={currentProduct.title}
-                  style={{ 
-                    width: '100%', 
-                    borderRadius: 8,
-                    objectFit: 'contain',
-                    height: '300px'
-                  }}
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300?text=Product';
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={8}>
-                <Typography variant="h5" gutterBottom>{currentProduct.title}</Typography>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Rating value={currentProduct.rating?.rate || 0} precision={0.1} readOnly />
-                  <Typography variant="body2" sx={{ ml: 1 }}>
-                    ({currentProduct.rating?.count || 0} reviews)
-                  </Typography>
-                </Box>
-                
-                <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
-                  ${typeof currentProduct.price === 'string' ? parseFloat(currentProduct.price).toFixed(2) : currentProduct.price.toFixed(2)}
-                </Typography>
-                
-                <Box sx={{ mb: 2 }}>
-                  <Chip 
-                    label={currentProduct.category} 
-                    size="small"
-                    sx={{ mr: 1 }}
-                  />
-                  <Chip 
-                    label={currentProduct.stock} 
-                    size="small"
-                    sx={{ 
-                      bgcolor: 
-                        currentProduct.stock === 'In Stock' ? '#e8f5e9' : 
-                        currentProduct.stock === 'Low Stock' ? '#fff8e1' : '#ffebee',
-                      color: 
-                        currentProduct.stock === 'In Stock' ? '#2e7d32' : 
-                        currentProduct.stock === 'Low Stock' ? '#f57f17' : '#c62828',
-                    }}
-                  />
-                </Box>
-                
-                <Typography variant="subtitle1" gutterBottom>Description:</Typography>
-                <Typography variant="body2" paragraph>
-                  {currentProduct.description}
-                </Typography>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
-          <Button 
-            onClick={() => {
-              setOpenViewDialog(false);
-              openEditForm(currentProduct);
-            }} 
-            color="primary"
-          >
-            Edit
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{currentProduct?.title}"? This action cannot be undone.
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete {productToDelete?.title}? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleDeleteProduct} 
-            color="error" 
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Delete'}
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

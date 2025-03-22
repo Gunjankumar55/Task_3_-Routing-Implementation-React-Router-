@@ -1,17 +1,46 @@
+// src/services/api.js
 import axios from 'axios';
 
-const BASE_URL = 'https://fakestoreapi.com';
+const API_URL = 'https://fakestoreapi.com';
 
-// User API calls
-export const getUsers = () => axios.get(`${BASE_URL}/users`);
-export const getUser = (id) => axios.get(`${BASE_URL}/users/${id}`);
-export const createUser = (userData) => axios.post(`${BASE_URL}/users`, userData);
-export const updateUser = (id, userData) => axios.put(`${BASE_URL}/users/${id}`, userData);
-export const deleteUser = (id) => axios.delete(`${BASE_URL}/users/${id}`);
+// User endpoints
+export const getUsers = () => {
+  return axios.get(`${API_URL}/users`);
+};
 
-// Product API calls
-export const getProducts = () => axios.get(`${BASE_URL}/products`);
-export const getProduct = (id) => axios.get(`${BASE_URL}/products/${id}`);
-export const createProduct = (productData) => axios.post(`${BASE_URL}/products`, productData);
-export const updateProduct = (id, productData) => axios.put(`${BASE_URL}/products/${id}`, productData);
-export const deleteProduct = (id) => axios.delete(`${BASE_URL}/products/${id}`);
+export const getUser = (id) => {
+  return axios.get(`${API_URL}/users/${id}`);
+};
+
+export const createUser = (userData) => {
+  return axios.post(`${API_URL}/users`, userData);
+};
+
+export const updateUser = (id, userData) => {
+  return axios.put(`${API_URL}/users/${id}`, userData);
+};
+
+export const deleteUser = (id) => {
+  return axios.delete(`${API_URL}/users/${id}`);
+};
+
+// Product endpoints
+export const getProducts = () => {
+  return axios.get(`${API_URL}/products`);
+};
+
+export const getProduct = (id) => {
+  return axios.get(`${API_URL}/products/${id}`);
+};
+
+export const createProduct = (productData) => {
+  return axios.post(`${API_URL}/products`, productData);
+};
+
+export const updateProduct = (id, productData) => {
+  return axios.put(`${API_URL}/products/${id}`, productData);
+};
+
+export const deleteProduct = (id) => {
+  return axios.delete(`${API_URL}/products/${id}`);
+};
